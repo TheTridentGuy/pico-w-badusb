@@ -5,12 +5,13 @@ import pwmio
 import digitalio
 import board
 import time
+import asyncio
 from adafruit_hid import keyboard, keycode, keyboard_layout_us
 from adafruit_httpserver import Server, Request, Response, FileResponse
 
 
 AP_SSID = ":3"
-BRIGHTNESS = 0.5
+BRIGHTNESS = 0.1
 RED = (1, 0, 0)
 GREEN = (0, 1, 0)
 BLUE = (0, 0, 1)
@@ -91,6 +92,8 @@ class RGBLed:
 
 rgb1 = RGBLed(board.GP21, board.GP20, board.GP19)
 rgb2 = RGBLed(board.GP18, board.GP17, board.GP16)
+rgb1.rainbow_time = 10
+rgb2.rainbow_time = 10
 button1 = digitalio.DigitalInOut(board.GP27)
 button1.direction = digitalio.Direction.INPUT
 button2 = digitalio.DigitalInOut(board.GP26)
@@ -114,11 +117,21 @@ def allup():
 def index(request: Request):
     return FileResponse(request, "index.html")
 
-rgb1.rainbow_time = 10
-rgb2.rainbow_time = 10
-led.value = False
-server.start(str(wifi.radio.ipv4_address_ap), 80)
-while True:
-    server.poll()
-    rgb1.next()
-    rgb2.next()
+async def rgb_event_loop():
+    while True:
+        rgb1.next()
+        rgb2.next()
+        await asyncio.sleep(0.05)
+
+async def server_event_loop():
+    while True:
+        server.poll()
+        await asyncio.sleep(0.01)
+
+async def main():
+    server.start(str(wifi.radio.ipv4_address_ap), 80)
+    rgb_task = asyncio.create_task(rgb_event_loop())
+    server_task = asyncio.create_task(server_event_loop())
+    await asyncio.gather(rgb_task, server_task)
+
+asyncio.run(main())
