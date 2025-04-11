@@ -6,12 +6,16 @@ import digitalio
 import board
 import time
 import asyncio
+import os
 from adafruit_hid import keyboard, keycode, keyboard_layout_us
-from adafruit_httpserver import Server, Request, Response, FileResponse
+from adafruit_httpserver import Server, Request, Response
 
 
 AP_SSID = ":3"
+SCRIPT_DIR = "/scripts"
 BRIGHTNESS = 0.1
+
+
 RED = (1, 0, 0)
 GREEN = (0, 1, 0)
 BLUE = (0, 0, 1)
@@ -23,7 +27,7 @@ MAGENTA = (1, 0, 1)
 wifi.radio.start_ap(AP_SSID, authmode=(wifi.AuthMode.OPEN,))
 print(f"SSID: {AP_SSID}, IP: {wifi.radio.ipv4_address_ap}")
 pool = socketpool.SocketPool(wifi.radio)
-server = Server(pool, "/html", debug=True)
+server = Server(pool, "/", debug=True)
 keyboard = keyboard.Keyboard(usb_hid.devices)
 layout = keyboard_layout_us.KeyboardLayoutUS(keyboard)
 led = digitalio.DigitalInOut(board.LED)
@@ -44,6 +48,10 @@ class RGBLed:
         self.red.duty_cycle = 65535 - int((r / 255) * 65535 * BRIGHTNESS)
         self.green.duty_cycle = 65535 - int((g / 255) * 65535 * BRIGHTNESS)
         self.blue.duty_cycle = 65535 - int((b / 255) * 65535 * BRIGHTNESS)
+    
+    def set(self, r, g, b):
+        self.color = (r, g, b)
+        self._set(*self.color)
         
     def rainbow_next(self):
         if self.rainbow_time == 0:
@@ -84,9 +92,8 @@ class RGBLed:
 
 rgb1 = RGBLed(board.GP21, board.GP20, board.GP19)
 rgb2 = RGBLed(board.GP18, board.GP17, board.GP16)
-rgb1.rainbow_time = 10
-rgb2.rainbow_time = 10
-rgb1.blink_time = 1
+rgb1.set(255, 0, 0)
+rgb2.set(255, 0, 0)
 button1 = digitalio.DigitalInOut(board.GP27)
 button1.direction = digitalio.Direction.INPUT
 button2 = digitalio.DigitalInOut(board.GP26)
@@ -108,7 +115,107 @@ def allup():
 
 @server.route("/")
 def index(request: Request):
-    return FileResponse(request, "index.html")
+    files = os.listdir(SCRIPT_DIR)
+    HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USB Rubber Ducky</title>
+    <style>
+        * {
+            font-family: sans-serif;
+        }
+        body {
+            display: flex;
+        }
+        .flex-row {
+            display: flex;
+            flex-direction: row;
+        }
+        .flex-grow {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex-col flex-grow">
+        <div class="flex-row">
+            <h1>Scripts:</h1>
+            <div class="flex-grow"></div>
+            <a href="/console">[go to console]</a>
+        </div>
+        <hr>
+        <div class="flex-col flex-grow">"""+"".join([f"""
+            <div class="flex-row">
+                <span>{file}</span>
+                <div class="flex-grow"></div>
+                <a href="/edit/{file}">[edit]</a>
+                ---
+                <a href="/run/{file}">[quick run]</a>
+            </div>
+            <hr>
+            """ for file in files])+"""
+        </div>
+    </div>
+</body>
+</html>"""
+    return Response(request, HTML, content_type="text/html")
+
+@server.route("/edit/<filename>")
+def edit(request: Request, filename: str):
+    try:
+        with open(SCRIPT_DIR+"/"+filename, "r") as f:
+            content = f.read()
+    except OSError:
+        content = None
+    HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USB Rubber Ducky</title>
+    <style>
+        * {
+            font-family: sans-serif;
+        }
+        body {
+            display: flex;
+        }
+        .flex-row {
+            display: flex;
+            flex-direction: row;
+        }
+        .flex-grow {
+            flex-grow: 1;
+        }
+        textarea {
+            height: 100%;
+        }
+    </style>
+</head>"""+f"""
+<body>
+    <div class="flex-col flex-grow">
+        <div class="flex-row">
+            <h1>{filename}</h1>
+            <div class="flex-grow"></div>
+            <a href="/console">[go to console]</a>
+        </div>
+        <hr>
+        <div class="flex-col flex-grow">
+            <div class="flex-row">
+                <div class="flex-grow"></div>
+                <a href="/run/{filename}">[run]</a>
+            </div>
+            <hr>
+            <div class="flex-row flex-grow">
+                <textarea name="" id="" class="flex-col flex-grow">{content}</textarea>
+            </div>
+        </div>
+    </div>
+</body>
+</html>"""
+    return Response(request, HTML, content_type="text/html")
 
 async def rgb_event_loop():
     while True:
@@ -125,6 +232,7 @@ async def main():
     server.start(str(wifi.radio.ipv4_address_ap), 80)
     rgb_task = asyncio.create_task(rgb_event_loop())
     server_task = asyncio.create_task(server_event_loop())
+    rgb1.rainbow_time = 10
+    rgb2.rainbow_time = 10
     await asyncio.gather(rgb_task, server_task)
-
 asyncio.run(main())
