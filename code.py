@@ -35,47 +35,59 @@ class RGBLed:
         self.red = pwmio.PWMOut(red_pin, frequency=100, duty_cycle=65535)
         self.green = pwmio.PWMOut(green_pin, frequency=100, duty_cycle=65535)
         self.blue = pwmio.PWMOut(blue_pin, frequency=100, duty_cycle=65535)
+        self.color = (0, 0, 0)
+        self.blink_time = 0
+        self.rainbow_time = 10
 
-    def set(self, r, g, b):
-        self.red.duty_cycle = 65535 - int(r * 65535 * BRIGHTNESS)
-        self.green.duty_cycle = 65535 - int(g * 65535 * BRIGHTNESS)
-        self.blue.duty_cycle = 65535 - int(b * 65535 * BRIGHTNESS)
+    def set(self, r, g, b, end_rainbow=True, end_blink=True):
+        if end_rainbow:
+            self.rainbow_time = 0
+        if end_blink:
+            self.blink_time = 0
+        self.color = (r, g, b)
+        self.red.duty_cycle = 65535 - int((r / 255) * 65535 * BRIGHTNESS)
+        self.green.duty_cycle = 65535 - int((g / 255) * 65535 * BRIGHTNESS)
+        self.blue.duty_cycle = 65535 - int((b / 255) * 65535 * BRIGHTNESS)
 
-    def rainbow_next(self, cycle_time=10):
-        h = (time.monotonic() % cycle_time) / cycle_time
-
-        r = 1 - (self.red.duty_cycle / 65535 / BRIGHTNESS)
-        g = 1 - (self.green.duty_cycle / 65535 / BRIGHTNESS)
-        b = 1 - (self.blue.duty_cycle / 65535 / BRIGHTNESS)
-        mx = max(r, g, b)
-        mn = min(r, g, b)
-        df = mx - mn
-        s = 0 if mx == 0 else df / mx
-        v = mx
-
+    def blink_next(self):
+        if self.blink_time == 0:
+            return
+        if int(time.monotonic() * (1 / self.blink_time)) % 2 == 0:
+            self.set(*self.color, end_blink=False)
+        else:
+            self.set(0, 0, 0, end_rainbow=False, end_blink=False)
+        
+    def rainbow_next(self):
+        if self.rainbow_time == 0:
+            return
+        h = (time.monotonic() % self.rainbow_time) / self.rainbow_time
         h *= 6
         i = int(h)
         f = h - i
-        p = v * (1 - s)
-        q = v * (1 - f * s)
-        t = v * (1 - (1 - f) * s)
+        p = 0
+        q = 1 - f
+        t = f
 
         if i % 6 == 0:
-            r, g, b = v, t, p
+            r, g, b = 1, t, p
         elif i == 1:
-            r, g, b = q, v, p
+            r, g, b = q, 1, p
         elif i == 2:
-            r, g, b = p, v, t
+            r, g, b = p, 1, t
         elif i == 3:
-            r, g, b = p, q, v
+            r, g, b = p, q, 1
         elif i == 4:
-            r, g, b = t, p, v
+            r, g, b = t, p, 1
         else:
-            r, g, b = v, p, q
+            r, g, b = 1, p, q
 
-        self.red.duty_cycle = int((1 - r) * 65535 * BRIGHTNESS)
-        self.green.duty_cycle = int((1 - g) * 65535 * BRIGHTNESS)
-        self.blue.duty_cycle = int((1 - b) * 65535 * BRIGHTNESS)
+        self.set(int(r * 255), int(g * 255), int(b * 255), end_rainbow=False, end_blink=False)
+
+    def next(self):
+        if self.blink_time > 0:
+            self.blink_next()
+        if self.rainbow_time > 0:
+            self.rainbow_next()
 
 rgb1 = RGBLed(board.GP21, board.GP20, board.GP19)
 rgb2 = RGBLed(board.GP18, board.GP17, board.GP16)
@@ -102,11 +114,11 @@ def allup():
 def index(request: Request):
     return FileResponse(request, "index.html")
 
-rgb1.set(1, 0, 0)
-rgb2.set(1, 0, 0)
+rgb1.rainbow_time = 10
+rgb2.rainbow_time = 10
 led.value = False
 server.start(str(wifi.radio.ipv4_address_ap), 80)
 while True:
     server.poll()
-    rgb1.rainbow_next()
-    rgb2.rainbow_next()
+    rgb1.next()
+    rgb2.next()
