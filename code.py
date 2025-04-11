@@ -40,23 +40,10 @@ class RGBLed:
         self.blink_time = 0
         self.rainbow_time = 10
 
-    def set(self, r, g, b, end_rainbow=True, end_blink=True):
-        if end_rainbow:
-            self.rainbow_time = 0
-        if end_blink:
-            self.blink_time = 0
-        self.color = (r, g, b)
+    def _set(self, r, g, b):
         self.red.duty_cycle = 65535 - int((r / 255) * 65535 * BRIGHTNESS)
         self.green.duty_cycle = 65535 - int((g / 255) * 65535 * BRIGHTNESS)
         self.blue.duty_cycle = 65535 - int((b / 255) * 65535 * BRIGHTNESS)
-
-    def blink_next(self):
-        if self.blink_time == 0:
-            return
-        if int(time.monotonic() * (1 / self.blink_time)) % 2 == 0:
-            self.set(*self.color, end_blink=False)
-        else:
-            self.set(0, 0, 0, end_rainbow=False, end_blink=False)
         
     def rainbow_next(self):
         if self.rainbow_time == 0:
@@ -82,18 +69,24 @@ class RGBLed:
         else:
             r, g, b = 1, p, q
 
-        self.set(int(r * 255), int(g * 255), int(b * 255), end_rainbow=False, end_blink=False)
+        self.color = (int(r * 255), int(g * 255), int(b * 255))
 
     def next(self):
         if self.blink_time > 0:
-            self.blink_next()
-        if self.rainbow_time > 0:
+            if time.monotonic() % (self.blink_time * 2) < self.blink_time:
+                self.rainbow_next()
+                self._set(*self.color)
+            else:
+                self._set(0, 0, 0)
+        else:
             self.rainbow_next()
+            self._set(*self.color)
 
 rgb1 = RGBLed(board.GP21, board.GP20, board.GP19)
 rgb2 = RGBLed(board.GP18, board.GP17, board.GP16)
 rgb1.rainbow_time = 10
 rgb2.rainbow_time = 10
+rgb1.blink_time = 1
 button1 = digitalio.DigitalInOut(board.GP27)
 button1.direction = digitalio.Direction.INPUT
 button2 = digitalio.DigitalInOut(board.GP26)
