@@ -12,11 +12,7 @@ from adafruit_hid.keycode import Keycode
 from adafruit_httpserver import Server, Request, Response
 from adafruit_httpserver.status import *
 
-
-AP_SSID = ":3"
-SCRIPT_DIR = "/scripts"
-BRIGHTNESS = 0.1
-DEFAULT_RAINBOW_TIME = 10
+from config import BRIGHTNESS, AP_SSID, SCRIPT_DIR, DEFAULT_RAINBOW_TIME
 
 
 RED = (1, 0, 0)
@@ -99,8 +95,10 @@ rgb1.set(255, 0, 0)
 rgb2.set(255, 0, 0)
 button1 = digitalio.DigitalInOut(board.GP27)
 button1.direction = digitalio.Direction.INPUT
+button1.pull = digitalio.Pull.DOWN
 button2 = digitalio.DigitalInOut(board.GP26)
 button2.direction = digitalio.Direction.INPUT
+button2.pull = digitalio.Pull.DOWN
 
 
 @server.route("/")
