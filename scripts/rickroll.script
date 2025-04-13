@@ -1,7 +1,0 @@
-set_rgb1(255, 0, 0)
-set_rgb2(255, 0, 0)
-press(WINDOWS)
-sleep(1)
-string("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-sleep(1)
-press(ENTER)
