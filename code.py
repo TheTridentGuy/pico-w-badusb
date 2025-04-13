@@ -7,13 +7,15 @@ import board
 import time
 import asyncio
 import os
-from adafruit_hid import keyboard, keycode, keyboard_layout_us
+from adafruit_hid import keyboard, keyboard_layout_us
+from adafruit_hid.keycode import Keycode
 from adafruit_httpserver import Server, Request, Response, Redirect
 
 
 AP_SSID = ":3"
 SCRIPT_DIR = "/scripts"
 BRIGHTNESS = 0.1
+DEFAULT_RAINBOW_TIME = 10
 
 
 RED = (1, 0, 0)
@@ -128,9 +130,10 @@ def index(request: Request):
 <body>
     <div class="flex-col flex-grow">
         <div class="flex-row">
-            <h1>Scripts:</h1>
+            <h1>USB Rubber Ducky</h1>
             <div class="flex-grow"></div>
-            <a href="/console">[go to console]</a>
+            <input type="text" id="name" placeholder="awesome.script..."/>
+            <a href="#" onclick="window.location.href='/edit/'+document.getElementById('name').value">[new script]</a>
         </div>
         <hr>
         <div class="flex-col flex-grow">"""+"".join([f"""
@@ -151,11 +154,13 @@ def index(request: Request):
 
 @server.route("/edit/<filename>")
 def edit(request: Request, filename: str):
+    if not filename:
+        return Response(request, "filename is empty", content_type="text/plain", status=400)
     try:
         with open(SCRIPT_DIR+"/"+filename, "r") as f:
             content = f.read()
     except OSError:
-        content = None
+        return Response(request, "unable to open file", content_type="text/plain", status=500)
     HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,19 +170,37 @@ def edit(request: Request, filename: str):
     <style>
         * {
             font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
         }
         body {
             display: flex;
-        }
-        .flex-row {
-            display: flex;
-            flex-direction: row;
+            flex-direction: column;
         }
         .flex-grow {
             flex-grow: 1;
         }
         textarea {
-            height: 100%;
+            flex-grow: 1;
+            resize: none;
+            border: none;
+            padding: 10px;
+        }
+        textarea:focus {
+            outline: none;
+            border: none;
+        }
+        .flex-row {
+            display: flex;
+            flex-direction: row;
+        }
+        .flex-col {
+            display: flex;
+            flex-direction: column;
         }
     </style>
 </head>"""+f"""
@@ -185,31 +208,65 @@ def edit(request: Request, filename: str):
     <div class="flex-col flex-grow">
         <div class="flex-row">
             <h1>{filename}</h1>
-            <div class="flex-grow"></div>
-            <a href="/console">[go to console]</a>
         </div>
         <hr>
         <div class="flex-col flex-grow">
             <div class="flex-row">
                 <div class="flex-grow"></div>
+                <a href="#" onclick="save()">[save]</a>
+                ---
                 <a href="/run/{filename}">[run]</a>
             </div>
             <hr>
             <div class="flex-row flex-grow">
-                <textarea name="" id="" class="flex-col flex-grow">{content}</textarea>
+                <textarea name="" id="" class="flex-grow">{content}</textarea>
             </div>
+            <span id="message"></span>
         </div>
-    </div>
+    </div>"""+"""
+    <script>
+        message = "don't forget to save your changes!";
+        document.getElementById("message").innerText = message;
+        function save(){
+            fetch("/save/"""+filename+"""", {
+                method: "POST",
+                body: document.querySelector("textarea").value
+            }).then((response) => {
+                if (response.ok) {
+                    document.getElementById("message").innerText = "saved successfully!";
+                    setTimeout(() => {
+                        document.getElementById("message").innerText = message;
+                    }, 5000);
+                } else {
+                    document.getElementById("message").innerText = "error saving file, http status: " + response.status +", see console for details.";
+                    console.log(response);
+                    setTimeout(() => {
+                        document.getElementById("message").innerText = message;
+                    }, 5000);
+                }
+            })
+        }
+    </script>
 </body>
 </html>"""
     return Response(request, HTML, content_type="text/html")
+
+@server.route("/save/<filename>", methods=["POST"])
+def save(request: Request, filename: str):
+    try:
+        with open(SCRIPT_DIR+"/"+filename, "w") as f:
+            f.write(request.body.decode())
+        return Response(request, "ok", content_type="text/plain")
+    except OSError as e:
+        print(e)
+        return Response(request, "unable to save file", content_type="text/plain", status=500)
 
 @server.route("/run/<filename>")
 def run(request: Request, filename: str):
     global run_flag, run_script
     run_flag = True
     run_script = filename
-    return Response(request, "Running script...", content_type="text/plain")
+    return Response(request, f"running {filename}...", content_type="text/plain")
 
 
 run_flag = False
@@ -217,6 +274,11 @@ run_script = None
 
 def string(text):
     layout.write(text)
+
+def press(*keys):
+    keyboard.press(*keys)
+    time.sleep(0.01)
+    keyboard.release(*keys)
 
 def keydown(*keys):
     keyboard.press(*keys)
@@ -248,8 +310,10 @@ def set_rgb2(r, g, b, blink_time=0, rainbow_time=0):
     rgb2.rainbow_time = rainbow_time
     rgb2.set(r, g, b)
 
+
 RUN_GLOBALS = {
     "string": string,
+    "press": press,
     "keydown": keydown,
     "keyup": keyup,
     "allup": allup,
@@ -259,6 +323,9 @@ RUN_GLOBALS = {
     "set_rgb1": set_rgb1,
     "set_rgb2": set_rgb2,
 }
+all_keycodes = {key: getattr(Keycode, key) for key in dir(Keycode) if not key.startswith("_")}
+for key in all_keycodes:
+    RUN_GLOBALS[key] = all_keycodes[key]
 
 async def run_event_loop():
     global run_flag, run_script
@@ -268,6 +335,8 @@ async def run_event_loop():
                 with open(SCRIPT_DIR+"/"+run_script, "r") as f:
                     code = f.read()
                 exec(code, RUN_GLOBALS)
+                rgb1.rainbow_time = DEFAULT_RAINBOW_TIME
+                rgb2.rainbow_time = DEFAULT_RAINBOW_TIME
             except Exception as e:
                 print(f"Error: {e}")
             finally:
@@ -290,7 +359,7 @@ async def main():
     rgb_task = asyncio.create_task(rgb_event_loop())
     server_task = asyncio.create_task(server_event_loop())
     run_task = asyncio.create_task(run_event_loop())
-    rgb1.rainbow_time = 10
-    rgb2.rainbow_time = 10
+    rgb1.rainbow_time = DEFAULT_RAINBOW_TIME
+    rgb2.rainbow_time = DEFAULT_RAINBOW_TIME
     await asyncio.gather(rgb_task, server_task, run_task)
 asyncio.run(main())
