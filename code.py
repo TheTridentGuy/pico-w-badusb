@@ -267,6 +267,17 @@ def run(request: Request, filename: str):
     run_script = filename
     return Response(request, f"running {filename}...", content_type="text/plain")
 
+@server.route("/press/<key>")
+def press_key(request: Request, key: str):
+    keys = key.split("+")
+    keys = [getattr(Keycode, k) for k in keys]
+    keys = [k for k in keys if k is not None]
+    if len(keys) > 0:
+        keydown(*keys)
+        time.sleep(0.01)
+        keyup(*keys)
+        return Response(request, "+".join(keys), content_type="text/plain")
+    return Response(request, "no keys specified (they should be + seperated)", content_type="text/plain", status=BAD_REQUEST_400)
 
 run_flag = False
 run_script = None
