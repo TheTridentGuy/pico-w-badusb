@@ -41,7 +41,7 @@ press(ENTER)
 # mischief managed
 # RGB leds will automatically go back to rainbow cylcling.
 ```
-
+### More of my scripts are available [here](https://github.com/TheTridentGuy/pico-w-badusb-scripts)!
 
 ## License:
 > ### NOTE:
