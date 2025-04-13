@@ -8,7 +8,7 @@ import time
 import asyncio
 import os
 from adafruit_hid import keyboard, keycode, keyboard_layout_us
-from adafruit_httpserver import Server, Request, Response
+from adafruit_httpserver import Server, Request, Response, Redirect
 
 
 AP_SSID = ":3"
@@ -98,19 +98,6 @@ button1 = digitalio.DigitalInOut(board.GP27)
 button1.direction = digitalio.Direction.INPUT
 button2 = digitalio.DigitalInOut(board.GP26)
 button2.direction = digitalio.Direction.INPUT
-
-
-def string(text):
-    layout.write(text)
-
-def keydown(*keys):
-    keyboard.press(*keys)
-
-def keyup(*keys):
-    keyboard.release(*keys)
-
-def allup():
-    keyboard.release_all()
 
 
 @server.route("/")
@@ -217,6 +204,76 @@ def edit(request: Request, filename: str):
 </html>"""
     return Response(request, HTML, content_type="text/html")
 
+@server.route("/run/<filename>")
+def run(request: Request, filename: str):
+    global run_flag, run_script
+    run_flag = True
+    run_script = filename
+    return Response(request, "Running script...", content_type="text/plain")
+
+
+run_flag = False
+run_script = None
+
+def string(text):
+    layout.write(text)
+
+def keydown(*keys):
+    keyboard.press(*keys)
+
+def keyup(*keys):
+    keyboard.release(*keys)
+
+def allup():
+    keyboard.release_all()
+
+def sleep(seconds):
+    time.sleep(seconds)
+
+def wait_for_button1():
+    while not button1.value:
+        time.sleep(0.01)
+
+def wait_for_button2():
+    while not button2.value:
+        time.sleep(0.01)
+
+def set_rgb1(r, g, b, blink_time=0, rainbow_time=0):
+    rgb1.blink_time = blink_time
+    rgb1.rainbow_time = rainbow_time
+    rgb1.set(r, g, b)
+
+def set_rgb2(r, g, b, blink_time=0, rainbow_time=0):
+    rgb2.blink_time = blink_time
+    rgb2.rainbow_time = rainbow_time
+    rgb2.set(r, g, b)
+
+RUN_GLOBALS = {
+    "string": string,
+    "keydown": keydown,
+    "keyup": keyup,
+    "allup": allup,
+    "sleep": sleep,
+    "wait_for_button1": wait_for_button1,
+    "wait_for_button2": wait_for_button2,
+    "set_rgb1": set_rgb1,
+    "set_rgb2": set_rgb2,
+}
+
+async def run_event_loop():
+    global run_flag, run_script
+    while True:
+        if run_flag and run_script:
+            try:
+                with open(SCRIPT_DIR+"/"+run_script, "r") as f:
+                    code = f.read()
+                exec(code, RUN_GLOBALS)
+            except Exception as e:
+                print(f"Error: {e}")
+            finally:
+                run_flag = False
+        await asyncio.sleep(0.1)
+
 async def rgb_event_loop():
     while True:
         rgb1.next()
@@ -232,7 +289,8 @@ async def main():
     server.start(str(wifi.radio.ipv4_address_ap), 80)
     rgb_task = asyncio.create_task(rgb_event_loop())
     server_task = asyncio.create_task(server_event_loop())
+    run_task = asyncio.create_task(run_event_loop())
     rgb1.rainbow_time = 10
     rgb2.rainbow_time = 10
-    await asyncio.gather(rgb_task, server_task)
+    await asyncio.gather(rgb_task, server_task, run_task)
 asyncio.run(main())
