@@ -1,5 +1,6 @@
-.*
+.*/
 sd/
 scripts/
+.*
 boot_out.txt
 settings.toml
