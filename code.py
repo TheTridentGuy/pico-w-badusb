@@ -9,7 +9,8 @@ import asyncio
 import os
 from adafruit_hid import keyboard, keyboard_layout_us
 from adafruit_hid.keycode import Keycode
-from adafruit_httpserver import Server, Request, Response, Redirect
+from adafruit_httpserver import Server, Request, Response
+from adafruit_httpserver.status import *
 
 
 AP_SSID = ":3"
@@ -132,7 +133,7 @@ def index(request: Request):
         <div class="flex-row">
             <h1>USB Rubber Ducky</h1>
             <div class="flex-grow"></div>
-            <input type="text" id="name" placeholder="awesome.script..."/>
+            <span><input type="text" id="name" placeholder="awesome.script..."/></span>
             <a href="#" onclick="window.location.href='/edit/'+document.getElementById('name').value">[new script]</a>
         </div>
         <hr>
@@ -155,12 +156,12 @@ def index(request: Request):
 @server.route("/edit/<filename>")
 def edit(request: Request, filename: str):
     if not filename:
-        return Response(request, "filename is empty", content_type="text/plain", status=400)
+        return Response(request, "filename is empty", content_type="text/plain", status=BAD_REQUEST_400)
     try:
         with open(SCRIPT_DIR+"/"+filename, "r") as f:
             content = f.read()
     except OSError:
-        return Response(request, "unable to open file", content_type="text/plain", status=500)
+        content = f"# {filename} (new script)"
     HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -259,7 +260,7 @@ def save(request: Request, filename: str):
         return Response(request, "ok", content_type="text/plain")
     except OSError as e:
         print(e)
-        return Response(request, "unable to save file", content_type="text/plain", status=500)
+        return Response(request, "unable to save file", content_type="text/plain", status=INTERNAL_SERVER_ERROR_500)
 
 @server.route("/run/<filename>")
 def run(request: Request, filename: str):
