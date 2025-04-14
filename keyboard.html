@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USB Rubber Ducky</title>
+    <style>
+        * {
+            font-family: sans-serif;
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+        .flex-grow {
+            flex-grow: 1;
+        }
+        .scrollable-row {
+            justify-content: left;
+            display: flex;
+            overflow-x: auto;
+            padding: 1px;
+            border-bottom: 1px solid #ccc;
+        }
+        .scrollable-row .key {
+            min-width: 12vw;
+        }
+        .keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1px;
+            flex-wrap: nowrap;
+        }
+        .key {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: 100%;
+            min-height: 5vh;
+            max-width: 60px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        .key sup {
+            font-size: 10px;
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            color: #666;
+        }
+        .key.toggled {
+            border: 3px solid #aaa;
+            color: black;
+        }
+        .key:active {
+            background-color: #aaa;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+<div class="flex-grow"></div>
+<div class="scrollable-row">
+    <div class="key" data-key="F1">F1</div>
+    <div class="key" data-key="F2">F2</div>
+    <div class="key" data-key="F3">F3</div>
+    <div class="key" data-key="F4">F4</div>
+    <div class="key" data-key="F5">F5</div>
+    <div class="key" data-key="F6">F6</div>
+    <div class="key" data-key="F7">F7</div>
+    <div class="key" data-key="F8">F8</div>
+    <div class="key" data-key="F9">F9</div>
+    <div class="key" data-key="F10">F10</div>
+    <div class="key" data-key="F11">F11</div>
+    <div class="key" data-key="F12">F12</div>
+</div>
+<div class="scrollable-row">
+    <div class="key" data-key="TAB">Tab</div>
+    <div class="key" data-key="UP_ARROW">↑</div>
+    <div class="key" data-key="DOWN_ARROW">↓</div>
+    <div class="key" data-key="LEFT_ARROW">←</div>
+    <div class="key" data-key="RIGHT_ARROW">→</div>
+    <div class="key" data-key="CAPS_LOCK">Caps</div>
+    <div class="key" data-key="ESCAPE">Esc</div>
+    <div class="key" data-key="INSERT">Insert</div>
+    <div class="key" data-key="DELETE">Delete</div>
+    <div class="key" data-key="HOME">Home</div>
+    <div class="key" data-key="END">End</div>
+    <div class="key" data-key="PAGE_UP">PgUp</div>
+    <div class="key" data-key="PAGE_DOWN">PgDn</div>
+</div>
+<div class="scrollable-row">
+    <div class="key" data-key="COMMA">,<sup>&lt;</sup></div>
+    <div class="key" data-key="PERIOD">.<sup>&gt;</sup></div>
+    <div class="key" data-key="FORWARD_SLASH">/<sup>?</sup></div>
+    <div class="key" data-key="SEMICOLON">;<sup>:</sup></div>
+    <div class="key" data-key="QUOTE">'<sup>"</sup></div>
+    <div class="key" data-key="LEFT_BRACKET">[<sup>{</sup></div>
+    <div class="key" data-key="RIGHT_BRACKET">]<sup>}</sup></div>
+    <div class="key" data-key="BACKSLASH">\ <sup>|</sup></div>
+    <div class="key" data-key="GRAVE_ACCENT">`<sup>~</sup></div>
+    <div class="key" data-key="MINUS">-<sup>_</sup></div>
+    <div class="key" data-key="EQUALS">=<sup>+</sup></div>
+</div>
+<div class="keyboard">
+    <div class="key" data-key="ONE">1<sup>!</sup></div>
+    <div class="key" data-key="TWO">2<sup>@</sup></div>
+    <div class="key" data-key="THREE">3<sup>#</sup></div>
+    <div class="key" data-key="FOUR">4<sup>$</sup></div>
+    <div class="key" data-key="FIVE">5<sup>%</sup></div>
+    <div class="key" data-key="SIX">6<sup>^</sup></div>
+    <div class="key" data-key="SEVEN">7<sup>&</sup></div>
+    <div class="key" data-key="EIGHT">8<sup>*</sup></div>
+    <div class="key" data-key="NINE">9<sup>(</sup></div>
+    <div class="key" data-key="ZERO">0<sup>)</sup></div>
+</div>
+<div class="keyboard">
+    <div class="key" data-key="Q">Q</div>
+    <div class="key" data-key="W">W</div>
+    <div class="key" data-key="E">E</div>
+    <div class="key" data-key="R">R</div>
+    <div class="key" data-key="T">T</div>
+    <div class="key" data-key="Y">Y</div>
+    <div class="key" data-key="U">U</div>
+    <div class="key" data-key="I">I</div>
+    <div class="key" data-key="O">O</div>
+    <div class="key" data-key="P">P</div>
+</div>
+<div class="keyboard">
+    <div class="key" data-key="A">A</div>
+    <div class="key" data-key="S">S</div>
+    <div class="key" data-key="D">D</div>
+    <div class="key" data-key="F">F</div>
+    <div class="key" data-key="G">G</div>
+    <div class="key" data-key="H">H</div>
+    <div class="key" data-key="J">J</div>
+    <div class="key" data-key="K">K</div>
+    <div class="key" data-key="L">L</div>
+    <div class="key" data-key="ENTER">Enter</div>
+</div>
+<div class="keyboard">
+    <div class="key togglable" data-key="LEFT_SHIFT">Shift</div>
+    <div class="key" data-key="Z">Z</div>
+    <div class="key" data-key="X">X</div>
+    <div class="key" data-key="C">C</div>
+    <div class="key" data-key="V">V</div>
+    <div class="key" data-key="B">B</div>
+    <div class="key" data-key="N">N</div>
+    <div class="key" data-key="M">M</div>
+    <div class="key" data-key="BACKSPACE">←</div>
+</div>
+<div class="keyboard">
+    <div class="key" data-key="LEFT_GUI">GUI</div>
+    <div class="key" data-key="COMMAND">&#8984;</div>
+    <div class="key togglable" data-key="LEFT_CONTROL">Ctrl</div>
+    <div class="key" data-key="SPACE" style="min-width: 40vw;">Space</div>
+    <div class="key togglable" data-key="LEFT_ALT">Alt</div>
+    <div class="key togglable" data-key="FN">fn</div>
+</div>
+<script>
+    const toggled_keys = new Set();
+    document.querySelectorAll(".key").forEach(key => {
+        key.addEventListener("click", () => {
+            const key_value = key.getAttribute("data-key");
+            if (key.classList.contains("togglable")) {
+                if (toggled_keys.has(key_value)) {
+                    toggled_keys.delete(key_value);
+                    key.classList.remove("toggled");
+                } else {
+                    toggled_keys.add(key_value);
+                    key.classList.add("toggled");
+                }
+            } else {
+                const keys_to_send = [...toggled_keys, key_value].join("+");
+                toggled_keys.clear();
+                document.querySelectorAll(".key.toggled").forEach(toggled_key => {
+                    toggled_key.classList.remove("toggled");
+                });
+                fetch(`/press/${keys_to_send}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error(`Failed to send key: ${keys_to_send}`);
+                        }
+                    });
+            }
+        });
+    });
+</script>
+</body>
+</html>

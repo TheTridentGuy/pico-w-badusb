@@ -133,6 +133,7 @@ def index(request: Request):
             <div class="flex-grow"></div>
             <span><input type="text" id="name" placeholder="awesome.script..."/></span>
             <a href="#" onclick="window.location.href='/edit/'+document.getElementById('name').value">[new script]</a>
+            <a href="/keyboard">[go to keyboard]</a>
         </div>
         <hr>
         <div class="flex-col flex-grow">"""+"".join([f"""
@@ -273,12 +274,13 @@ def press_key(request: Request, key: str):
     keys = [getattr(Keycode, k) for k in keys]
     keys = [k for k in keys if k is not None]
     if len(keys) > 0:
-        keydown(*keys)
-        time.sleep(0.01)
-        keyup(*keys)
-        return Response(request, "+".join(keys), content_type="text/plain")
+        press(*keys)
+        return Response(request, "ok", content_type="text/plain")
     return Response(request, "no keys specified (they should be + seperated)", content_type="text/plain", status=BAD_REQUEST_400)
 
+@server.route("/keyboard")
+def get_keyboard(request: Request):
+    return FileResponse(request, "keyboard.html", content_type="text/html")
 
 run_flag = False
 run_script = None
