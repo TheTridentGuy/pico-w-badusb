@@ -8,6 +8,7 @@ import time
 import asyncio
 import os
 import binascii
+import supervisor
 from adafruit_hid import keyboard, keyboard_layout_us
 from adafruit_hid.keycode import Keycode
 from adafruit_httpserver import Server, Request, Response, FileResponse
@@ -409,5 +410,10 @@ async def main():
     rgb1.rainbow_time = DEFAULT_RAINBOW_TIME
     rgb2.rainbow_time = DEFAULT_RAINBOW_TIME
     await asyncio.gather(rgb_task, server_task, run_task)
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except Exception as e:
+    print(e)
+    print("reloading...")
+    supervisor.reload()
  # type: ignore
