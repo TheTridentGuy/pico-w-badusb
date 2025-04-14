@@ -9,7 +9,7 @@ import asyncio
 import os
 from adafruit_hid import keyboard, keyboard_layout_us
 from adafruit_hid.keycode import Keycode
-from adafruit_httpserver import Server, Request, Response
+from adafruit_httpserver import Server, Request, Response, FileResponse
 from adafruit_httpserver.status import *
 
 from config import BRIGHTNESS, AP_SSID, SCRIPT_DIR, DEFAULT_RAINBOW_TIME
@@ -165,7 +165,7 @@ def edit(request: Request, filename: str):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USB Rubber Ducky</title>
+    <title>Edit Script</title>
     <style>
         * {
             font-family: sans-serif;
@@ -279,6 +279,7 @@ def press_key(request: Request, key: str):
         return Response(request, "+".join(keys), content_type="text/plain")
     return Response(request, "no keys specified (they should be + seperated)", content_type="text/plain", status=BAD_REQUEST_400)
 
+
 run_flag = False
 run_script = None
 
@@ -373,3 +374,4 @@ async def main():
     rgb2.rainbow_time = DEFAULT_RAINBOW_TIME
     await asyncio.gather(rgb_task, server_task, run_task)
 asyncio.run(main())
+ # type: ignore
