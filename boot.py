@@ -15,4 +15,4 @@ if not button1.value and not button2.value:
 else:
     red_pwm1 = pwmio.PWMOut(board.GP21, frequency=100, duty_cycle=65535-(BRIGHTNESS * 65535))
     red_pwm2 = pwmio.PWMOut(board.GP18, frequency=100, duty_cycle=65535-(BRIGHTNESS * 65535))
-    time.sleep(1)
+    time.sleep(3)
