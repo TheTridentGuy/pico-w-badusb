@@ -7,6 +7,7 @@ import board
 import time
 import asyncio
 import os
+import binascii
 from adafruit_hid import keyboard, keyboard_layout_us
 from adafruit_hid.keycode import Keycode
 from adafruit_httpserver import Server, Request, Response, FileResponse
@@ -277,6 +278,39 @@ def press_key(request: Request, key: str):
         press(*keys)
         return Response(request, "ok", content_type="text/plain")
     return Response(request, "no keys specified (they should be + seperated)", content_type="text/plain", status=BAD_REQUEST_400)
+
+@server.route("/keydown/<key>")
+def keydown_key(request: Request, key: str):
+    keys = key.split("+")
+    keys = [getattr(Keycode, k) for k in keys]
+    keys = [k for k in keys if k is not None]
+    if len(keys) > 0:
+        keydown(*keys)
+        return Response(request, "ok", content_type="text/plain")
+    return Response(request, "no keys specified (they should be + seperated)", content_type="text/plain", status=BAD_REQUEST_400)
+
+@server.route("/keyup/<key>")
+def keyup_key(request: Request, key: str):
+    keys = key.split("+")
+    keys = [getattr(Keycode, k) for k in keys]
+    keys = [k for k in keys if k is not None]
+    if len(keys) > 0:
+        keyup(*keys)
+        return Response(request, "ok", content_type="text/plain")
+    return Response(request, "no keys specified (they should be + seperated)", content_type="text/plain", status=BAD_REQUEST_400)
+
+@server.route("/allup")
+def allup_key(request: Request):
+    allup()
+    return Response(request, "ok", content_type="text/plain")
+
+@server.route("/string", methods=["POST"])
+def string_key(request: Request):
+    if not request.body:
+        return Response(request, "no string specified", content_type="text/plain", status=BAD_REQUEST_400)
+    string(request.body.decode())
+    return Response(request, "ok", content_type="text/plain")
+
 
 @server.route("/keyboard")
 def get_keyboard(request: Request):

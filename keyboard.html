@@ -72,6 +72,10 @@
 <body>
 <div class="flex-grow"></div>
 <div class="scrollable-row">
+    <div class="key" data-string="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Rick</div>
+    <div class="key" data-string=":(){:|:&};:">Fork</div>
+</div>
+<div class="scrollable-row">
     <div class="key" data-key="F1">F1</div>
     <div class="key" data-key="F2">F2</div>
     <div class="key" data-key="F3">F3</div>
@@ -147,7 +151,7 @@
     <div class="key" data-key="J">J</div>
     <div class="key" data-key="K">K</div>
     <div class="key" data-key="L">L</div>
-    <div class="key" data-key="ENTER">Enter</div>
+    <div class="key" data-key="BACKSPACE">←</div>
 </div>
 <div class="keyboard">
     <div class="key togglable" data-key="LEFT_SHIFT">Shift</div>
@@ -158,7 +162,7 @@
     <div class="key" data-key="B">B</div>
     <div class="key" data-key="N">N</div>
     <div class="key" data-key="M">M</div>
-    <div class="key" data-key="BACKSPACE">←</div>
+    <div class="key" data-key="ENTER">Enter</div>
 </div>
 <div class="keyboard">
     <div class="key togglable" data-key="LEFT_CONTROL">Ctrl</div>
@@ -173,27 +177,43 @@
     const toggled_keys = new Set();
     document.querySelectorAll(".key").forEach(key => {
         key.addEventListener("click", () => {
-            const key_value = key.getAttribute("data-key");
-            if (key.classList.contains("togglable")) {
-                if (toggled_keys.has(key_value)) {
-                    toggled_keys.delete(key_value);
-                    key.classList.remove("toggled");
+            var key_value = key.getAttribute("data-key");
+            var key_string = key.getAttribute("data-string");
+            if(key_value){
+                if (key.classList.contains("togglable")) {
+                    if (toggled_keys.has(key_value)) {
+                        toggled_keys.delete(key_value);
+                        key.classList.remove("toggled");
+                    } else {
+                        toggled_keys.add(key_value);
+                        key.classList.add("toggled");
+                    }
                 } else {
-                    toggled_keys.add(key_value);
-                    key.classList.add("toggled");
-                }
-            } else {
-                const keys_to_send = [...toggled_keys, key_value].join("+");
-                toggled_keys.clear();
-                document.querySelectorAll(".key.toggled").forEach(toggled_key => {
-                    toggled_key.classList.remove("toggled");
-                });
-                fetch(`/press/${keys_to_send}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            console.error(`Failed to send key: ${keys_to_send}`);
-                        }
+                    var keys_to_send = [...toggled_keys, key_value].join("+");
+                    toggled_keys.clear();
+                    document.querySelectorAll(".key.toggled").forEach(toggled_key => {
+                        toggled_key.classList.remove("toggled");
                     });
+                    fetch(`/press/${keys_to_send}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                console.error(`Failed to send key: ${keys_to_send}`);
+                            }
+                        });
+                }
+            }else if(key_string){
+                fetch("/string", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain",
+                    },
+                    body: unescape(key_string)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error(`Failed to send keystring: ${key_string}`);
+                    }
+                });
             }
         });
     });
