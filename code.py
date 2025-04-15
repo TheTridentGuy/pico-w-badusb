@@ -17,12 +17,9 @@ from adafruit_httpserver.status import *
 from config import BRIGHTNESS, AP_SSID, SCRIPT_DIR, DEFAULT_RAINBOW_TIME
 
 
-RED = (1, 0, 0)
-GREEN = (0, 1, 0)
-BLUE = (0, 0, 1)
-YELLOW = (1, 1, 0)
-CYAN = (0, 1, 1)
-MAGENTA = (1, 0, 1)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 
 
 wifi.radio.start_ap(AP_SSID, authmode=(wifi.AuthMode.OPEN,))
@@ -414,6 +411,8 @@ try:
     asyncio.run(main())
 except Exception as e:
     print(e)
-    print("reloading...")
+    set_rgb1(*RED)
+    set_rgb2(*RED)
+    time.sleep(1)
     supervisor.reload()
  # type: ignore
