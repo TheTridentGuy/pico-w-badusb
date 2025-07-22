@@ -39,7 +39,7 @@ sleep(1)
 # press enter
 press(ENTER)
 # mischief managed
-# RGB leds will automatically go back to rainbow cylcling.
+# RGB leds will automatically go back to rainbow cycling.
 ```
 ### More of my scripts are available [here](https://github.com/TheTridentGuy/pico-w-badusb-scripts)!
 
